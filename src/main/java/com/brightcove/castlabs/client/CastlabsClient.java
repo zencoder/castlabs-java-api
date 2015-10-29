@@ -11,14 +11,21 @@ import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
+
+import com.brightcove.castlabs.client.request.IngestKeysRequest;
+import com.brightcove.castlabs.client.response.IngestKeysResponse;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Client for interacting with the Castlabs key ingestion API.
@@ -35,27 +42,28 @@ public class CastlabsClient {
     private String username;
     private String password;
     private int connectionTimeoutSeconds = -1;
+    private ObjectMapper objectMapper;
 
     public CastlabsClient(String username, String password) {
         this(username, password, CASTLABS_AUTH_BASE_URL, CASTLABS_INGESTION_BASE_URL, -1);
     }
 
-    public CastlabsClient(String username, String password, String authBaseUrl, String ingestionBaseUrl,
-            int connectionTimeoutSeconds) {
+    public CastlabsClient(String username, String password, String authBaseUrl,
+            String ingestionBaseUrl, int connectionTimeoutSeconds) {
+        this.objectMapper = new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.username = username;
         this.password = password;
         this.connectionTimeoutSeconds = connectionTimeoutSeconds;
 
         if (authBaseUrl.endsWith("/")) {
             this.authBaseUrl = authBaseUrl;
-
         } else {
             this.authBaseUrl = authBaseUrl + "/";
         }
 
         if (ingestionBaseUrl.endsWith("/")) {
             this.ingestionBaseUrl = ingestionBaseUrl;
-
         } else {
             this.ingestionBaseUrl = ingestionBaseUrl + "/";
         }
@@ -126,7 +134,7 @@ public class CastlabsClient {
      * @throws CastlabsException error reported by Castlabs
      * @throws IOException communication error when interacting with Castlabs API
      */
-    public String getTicket(String merchantId) throws CastlabsException, IOException {
+    protected String getTicket(String merchantId) throws CastlabsException, IOException {
         final HttpPost ticketRequest = new HttpPost(this.login());
         ticketRequest.addHeader("Content-Type", "application/x-www-form-urlencoded");
         ticketRequest.setHeader("Accept", "*/*");
@@ -159,6 +167,55 @@ public class CastlabsClient {
                 throw new CastlabsException("No response when retrieving Castlabs ticket");
             }
             return IOUtils.toString(ticketResponse.getEntity().getContent());
+        } finally {
+            try {
+                if (ticketResponse != null)
+                    ticketResponse.close();
+            } catch (IOException e) {
+                // ignore
+            }
+        }
+    }
+
+    public IngestKeysResponse ingestKeys(IngestKeysRequest assets, String merchantId)
+            throws CastlabsException, IOException {
+        final String uri = this.ingestionBaseUrl + "frontend/api/keys/v2/ingest/" + merchantId
+                + "?ticket=" + this.getTicket(merchantId);
+        final HttpPost ingestRequest = new HttpPost(uri);
+        ingestRequest.addHeader("Content-Type", "application/json");
+        ingestRequest.setHeader("Accept", "application/json");
+
+        final CloseableHttpClient httpclient = HttpClients.createDefault();
+        CloseableHttpResponse ticketResponse = null;
+        try {
+            if (this.connectionTimeoutSeconds > 0) {
+                int connectionTimeout = connectionTimeoutSeconds * 1000;
+                RequestConfig requestConfig =
+                        RequestConfig.custom().setConnectionRequestTimeout(connectionTimeout)
+                                .setConnectTimeout(connectionTimeout)
+                                .setSocketTimeout(connectionTimeout).build();
+                ingestRequest.setConfig(requestConfig);
+            }
+            ingestRequest.setEntity(new StringEntity(objectMapper.writeValueAsString(assets)));
+            ticketResponse = httpclient.execute(ingestRequest);
+            if (ticketResponse != null) {
+                final int statusCode = ticketResponse.getStatusLine().getStatusCode();
+                final String reason = ticketResponse.getStatusLine().getReasonPhrase();
+                if (200 != statusCode) {
+                    throw new CastlabsException(
+                            "Ingest failed: Response code=" + statusCode + ", Reason=" + reason);
+                }
+                final HttpEntity responseEntity = ticketResponse.getEntity();
+                if (responseEntity != null) {
+                    final IngestKeysResponse getPadResponse = objectMapper
+                            .readValue(responseEntity.getContent(), IngestKeysResponse.class);
+                    return getPadResponse;
+                } else {
+                    throw new CastlabsException("Empty response entity from Castlabs");
+                }
+            } else {
+                throw new CastlabsException("No response when ingesting keys into Castlabs");
+            }
         } finally {
             try {
                 if (ticketResponse != null)
