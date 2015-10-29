@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
@@ -58,7 +59,7 @@ public class CastlabsClient {
      * @return
      * @throws CastlabsException
      */
-    public String login() throws CastlabsException, IOException {
+    protected String login() throws CastlabsException, IOException {
         final HttpPost loginRequest = new HttpPost(this.baseUrl + "cas/v1/tickets");
         loginRequest.addHeader("Content-Type", "application/x-www-form-urlencoded");
         loginRequest.setHeader("Accept", "*/*");
@@ -107,4 +108,46 @@ public class CastlabsClient {
         }
     }
 
+    
+    public String getTicket(String merchantId) throws CastlabsException, IOException {
+        final HttpPost ticketRequest = new HttpPost(this.login());
+        ticketRequest.addHeader("Content-Type", "application/x-www-form-urlencoded");
+        ticketRequest.setHeader("Accept", "*/*");
+
+        final List<NameValuePair> entityParts = new ArrayList<NameValuePair>();
+        entityParts.add(new BasicNameValuePair("service", "https://fe.drmtoday.com/frontend/rest/keys/v1/cenc/merchant/" + merchantId + "/key"));
+
+        final CloseableHttpClient httpclient = HttpClients.createDefault();
+        CloseableHttpResponse ticketResponse = null;
+        try {
+            if (this.connectionTimeoutSeconds > 0) {
+                int connectionTimeout = connectionTimeoutSeconds * 1000;
+                RequestConfig requestConfig =
+                        RequestConfig.custom().setConnectionRequestTimeout(connectionTimeout)
+                                .setConnectTimeout(connectionTimeout)
+                                .setSocketTimeout(connectionTimeout).build();
+                ticketRequest.setConfig(requestConfig);
+            }
+            ticketRequest.setEntity(new UrlEncodedFormEntity(entityParts));
+            ticketResponse = httpclient.execute(ticketRequest);
+            if (ticketResponse != null) {
+                final int statusCode = ticketResponse.getStatusLine().getStatusCode();
+                final String reason = ticketResponse.getStatusLine().getReasonPhrase();
+                if (200 != statusCode) {
+                    throw new CastlabsException(
+                            "Ticket retrieval failed: Response code=" + statusCode + ", Reason=" + reason);
+                }
+            } else {
+                throw new CastlabsException("No response when retrieving Castlabs ticket");
+            }
+            return IOUtils.toString(ticketResponse.getEntity().getContent());
+        } finally {
+            try {
+                if (ticketResponse != null)
+                    ticketResponse.close();
+            } catch (IOException e) {
+                // ignore
+            }
+        }        
+    }
 }

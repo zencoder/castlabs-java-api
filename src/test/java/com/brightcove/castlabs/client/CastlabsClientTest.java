@@ -58,10 +58,8 @@ public class CastlabsClientTest {
 
     @Test
     public void testUnauthorizedLoginRequest() {
-        assertNotNull(mockServerClient);
-        assertTrue(mockServerClient.isRunning());
-        final HttpRequest LoginRequest = request().withMethod("POST").withPath("/cas/v1/tickets");
-        mockServerClient.when(LoginRequest).respond(response().withStatusCode(401));
+        final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets");
+        mockServerClient.when(loginRequest).respond(response().withStatusCode(401));
         try {
             castlabsClient.login();
             fail("Expected exception");
@@ -70,15 +68,13 @@ public class CastlabsClientTest {
         } catch (Exception e) {
             fail(e.getMessage());
         }
-        mockServerClient.verify(LoginRequest, VerificationTimes.once());
+        mockServerClient.verify(loginRequest, VerificationTimes.once());
     }
 
     @Test
     public void testLoginRequestThatOmitsLocationHeaderInResponse() {
-        assertNotNull(mockServerClient);
-        assertTrue(mockServerClient.isRunning());
-        final HttpRequest LoginRequest = request().withMethod("POST").withPath("/cas/v1/tickets");
-        mockServerClient.when(LoginRequest).respond(response().withStatusCode(201));
+        final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets");
+        mockServerClient.when(loginRequest).respond(response().withStatusCode(201));
         try {
             castlabsClient.login();
             fail("Expected exception");
@@ -87,15 +83,13 @@ public class CastlabsClientTest {
         } catch (Exception e) {
             fail(e.getMessage());
         }
-        mockServerClient.verify(LoginRequest, VerificationTimes.once());
+        mockServerClient.verify(loginRequest, VerificationTimes.once());
     }
 
     @Test
     public void testLoginRequestTimeout() {
-        assertNotNull(mockServerClient);
-        assertTrue(mockServerClient.isRunning());
-        final HttpRequest LoginRequest = request().withMethod("POST").withPath("/cas/v1/tickets");
-        mockServerClient.when(LoginRequest).respond(response().withDelay(TimeUnit.SECONDS, 30));
+        final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets");
+        mockServerClient.when(loginRequest).respond(response().withDelay(TimeUnit.SECONDS, 30));
         try {
             castlabsClient.login();
             fail("Expected exception");
@@ -108,17 +102,82 @@ public class CastlabsClientTest {
 
     @Test
     public void testLoginRequestGold() throws Exception {
-        assertNotNull(mockServerClient);
-        assertTrue(mockServerClient.isRunning());
-        final HttpRequest LoginRequest = request().withMethod("POST").withPath("/cas/v1/tickets")
+        final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets")
                 .withBody("username=" + username + "&password=" + password)
                 .withHeader("content-type", "application/x-www-form-urlencoded");
         String expectedTicket = "http://example.com";
-        mockServerClient.when(LoginRequest)
+        mockServerClient.when(loginRequest)
                 .respond(response().withStatusCode(201).withHeader("location", expectedTicket));
         final String loginURL = castlabsClient.login();
         assertEquals(expectedTicket, loginURL);
-        mockServerClient.verify(LoginRequest, VerificationTimes.once());
+        mockServerClient.verify(loginRequest, VerificationTimes.once());
+    }
+
+    @Test
+    public void testTicketRequestWithLoginFailure() {
+        String loginToken = "FVyaO9p22zQRdhPA47lUIhJ3WS0tDYsy47f2y7J2CAmGwR6X";
+        final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets")
+                .withBody("username=" + username + "&password=" + password)
+                .withHeader("content-type", "application/x-www-form-urlencoded");
+        mockServerClient.when(loginRequest).respond(response().withStatusCode(401)
+                .withHeader("location", "http://localhost:1080/cas/v1/tickets/" + loginToken));
+
+        final HttpRequest ticketRequest =
+                request().withMethod("POST").withPath("/cas/v1/tickets/" + loginToken);
+        try {
+            castlabsClient.getTicket("merchX");
+            fail("Expected exception");
+        } catch (CastlabsException e) {
+            // ignore
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+        mockServerClient.verify(loginRequest, VerificationTimes.once());
+        mockServerClient.verify(ticketRequest, VerificationTimes.exactly(0));
+    }
+
+    @Test
+    public void testUnauthorizedTicketRequest() {
+        String loginToken = "FVyaO9p22zQRdhPA47lUIhJ3WS0tDYsy47f2y7J2CAmGwR6X";
+        final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets")
+                .withBody("username=" + username + "&password=" + password)
+                .withHeader("content-type", "application/x-www-form-urlencoded");
+        mockServerClient.when(loginRequest).respond(response().withStatusCode(201)
+                .withHeader("location", "http://localhost:1080/cas/v1/tickets/" + loginToken));
+
+        final HttpRequest ticketRequest =
+                request().withMethod("POST").withPath("/cas/v1/tickets/" + loginToken);
+        mockServerClient.when(ticketRequest).respond(response().withStatusCode(401));
+        try {
+            castlabsClient.getTicket("merchX");
+            fail("Expected exception");
+        } catch (CastlabsException e) {
+            // ignore
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+        mockServerClient.verify(loginRequest, VerificationTimes.once());
+        mockServerClient.verify(ticketRequest, VerificationTimes.once());
+    }
+
+    @Test
+    public void testTicketRequestGold() throws Exception {
+        String loginToken = "FVyaO9p22zQRdhPA47lUIhJ3WS0tDYsy47f2y7J2CAmGwR6X";
+        final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets")
+                .withBody("username=" + username + "&password=" + password)
+                .withHeader("content-type", "application/x-www-form-urlencoded");
+        mockServerClient.when(loginRequest).respond(response().withStatusCode(201)
+                .withHeader("location", "http://localhost:1080/cas/v1/tickets/" + loginToken));
+
+        final HttpRequest ticketRequest =
+                request().withMethod("POST").withPath("/cas/v1/tickets/" + loginToken);
+        mockServerClient.when(ticketRequest).respond(response().withStatusCode(200).withBody("F40D6052-236F-4942-9C51-DD01C15A14C6"));
+        final String ticket = castlabsClient.getTicket("merchX");
+        assertNotNull(ticket);
+        assertEquals("F40D6052-236F-4942-9C51-DD01C15A14C6", ticket);
+
+        mockServerClient.verify(loginRequest, VerificationTimes.once());
+        mockServerClient.verify(ticketRequest, VerificationTimes.once());
     }
 
 }
