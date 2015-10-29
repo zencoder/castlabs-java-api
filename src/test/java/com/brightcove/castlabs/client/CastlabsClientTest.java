@@ -28,8 +28,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class CastlabsClientTest {
 
+    private static final int mockPort = 1080;
+
     @Rule
-    public MockServerRule mockServerRule = new MockServerRule(1080, this);
+    public MockServerRule mockServerRule = new MockServerRule(mockPort, this);
 
     private MockServerClient mockServerClient;
 
@@ -45,7 +47,8 @@ public class CastlabsClientTest {
     public void setUp() throws Exception {
         username = "x";
         password = "y";
-        castlabsClient = new CastlabsClient(username, password, "http://localhost:1080", 1);
+        String mockURL = "http://localhost:" + mockPort;
+        castlabsClient = new CastlabsClient(username, password, mockURL, mockURL, 1);
     }
 
     /**
@@ -119,8 +122,8 @@ public class CastlabsClientTest {
         final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets")
                 .withBody("username=" + username + "&password=" + password)
                 .withHeader("content-type", "application/x-www-form-urlencoded");
-        mockServerClient.when(loginRequest).respond(response().withStatusCode(401)
-                .withHeader("location", "http://localhost:1080/cas/v1/tickets/" + loginToken));
+        mockServerClient.when(loginRequest).respond(response().withStatusCode(401).withHeader(
+                "location", "http://localhost:" + mockPort + "/cas/v1/tickets/" + loginToken));
 
         final HttpRequest ticketRequest =
                 request().withMethod("POST").withPath("/cas/v1/tickets/" + loginToken);
@@ -142,8 +145,8 @@ public class CastlabsClientTest {
         final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets")
                 .withBody("username=" + username + "&password=" + password)
                 .withHeader("content-type", "application/x-www-form-urlencoded");
-        mockServerClient.when(loginRequest).respond(response().withStatusCode(201)
-                .withHeader("location", "http://localhost:1080/cas/v1/tickets/" + loginToken));
+        mockServerClient.when(loginRequest).respond(response().withStatusCode(201).withHeader(
+                "location", "http://localhost:" + mockPort + "/cas/v1/tickets/" + loginToken));
 
         final HttpRequest ticketRequest =
                 request().withMethod("POST").withPath("/cas/v1/tickets/" + loginToken);
@@ -166,12 +169,13 @@ public class CastlabsClientTest {
         final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets")
                 .withBody("username=" + username + "&password=" + password)
                 .withHeader("content-type", "application/x-www-form-urlencoded");
-        mockServerClient.when(loginRequest).respond(response().withStatusCode(201)
-                .withHeader("location", "http://localhost:1080/cas/v1/tickets/" + loginToken));
+        mockServerClient.when(loginRequest).respond(response().withStatusCode(201).withHeader(
+                "location", "http://localhost:" + mockPort + "/cas/v1/tickets/" + loginToken));
 
         final HttpRequest ticketRequest =
                 request().withMethod("POST").withPath("/cas/v1/tickets/" + loginToken);
-        mockServerClient.when(ticketRequest).respond(response().withStatusCode(200).withBody("F40D6052-236F-4942-9C51-DD01C15A14C6"));
+        mockServerClient.when(ticketRequest).respond(
+                response().withStatusCode(200).withBody("F40D6052-236F-4942-9C51-DD01C15A14C6"));
         final String ticket = castlabsClient.getTicket("merchX");
         assertNotNull(ticket);
         assertEquals("F40D6052-236F-4942-9C51-DD01C15A14C6", ticket);
