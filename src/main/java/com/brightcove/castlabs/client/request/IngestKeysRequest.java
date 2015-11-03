@@ -13,13 +13,13 @@ import java.util.List;
  *
  */
 public class IngestKeysRequest {
-    private List<Asset> assets = new ArrayList<Asset>();
+    private List<AssetRequest> assets = new ArrayList<AssetRequest>();
 
-    public List<Asset> getAssets() {
+    public List<AssetRequest> getAssets() {
         return assets;
     }
 
-    public void setAssets(List<Asset> assets) {
+    public void setAssets(List<AssetRequest> assets) {
         this.assets = assets;
     }
 

@@ -12,7 +12,7 @@ import java.util.List;
  * @author Scott Kidder
  *
  */
-public class Asset {
+public class AssetRequest {
     private AssetType type;
     private String assetId;
     private String variantId;

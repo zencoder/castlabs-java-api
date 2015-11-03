@@ -12,7 +12,7 @@ import java.util.List;
  * @author Scott Kidder
  *
  */
-public class Asset {
+public class AssetResponse {
     private String assetId;
     private List<IngestKeysResponse> keys = new ArrayList<IngestKeysResponse>();
     private List<IngestAssetError> errors = new ArrayList<IngestAssetError>();

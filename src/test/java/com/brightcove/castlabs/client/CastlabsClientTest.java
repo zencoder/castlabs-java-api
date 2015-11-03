@@ -16,7 +16,7 @@ import org.mockserver.junit.MockServerRule;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import com.brightcove.castlabs.client.request.Asset;
+import com.brightcove.castlabs.client.request.AssetRequest;
 import com.brightcove.castlabs.client.request.IngestKey;
 import com.brightcove.castlabs.client.request.IngestKeysRequest;
 import com.brightcove.castlabs.client.request.StreamType;
@@ -226,7 +226,7 @@ public class CastlabsClientTest {
                 "  ]\n" + 
                 "}"));
         final IngestKeysRequest ingestKeysRequest = new IngestKeysRequest();
-        final Asset asset = new Asset();
+        final AssetRequest asset = new AssetRequest();
         asset.setAssetId("rst_test_20150909_004");
         final IngestKey key = new IngestKey();
         key.setStreamType(StreamType.VIDEO);
