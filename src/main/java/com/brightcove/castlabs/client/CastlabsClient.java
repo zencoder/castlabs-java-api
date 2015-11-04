@@ -177,7 +177,16 @@ public class CastlabsClient {
         }
     }
 
-    public IngestKeysResponse ingestKeys(IngestKeysRequest assets, String merchantId)
+    /**
+     * Ingest one or more keys into the Castlabs keystore.
+     * 
+     * @param request
+     * @param merchantId
+     * @return response from Castlabs
+     * @throws CastlabsException error reported by Castlabs
+     * @throws IOException network error while communicating with Castlabs REST API
+     */
+    public IngestKeysResponse ingestKeys(IngestKeysRequest request, String merchantId)
             throws CastlabsException, IOException {
         final String uri = this.ingestionBaseUrl + "frontend/api/keys/v2/ingest/" + merchantId
                 + "?ticket=" + this.getTicket(merchantId);
@@ -196,7 +205,7 @@ public class CastlabsClient {
                                 .setSocketTimeout(connectionTimeout).build();
                 ingestRequest.setConfig(requestConfig);
             }
-            ingestRequest.setEntity(new StringEntity(objectMapper.writeValueAsString(assets)));
+            ingestRequest.setEntity(new StringEntity(objectMapper.writeValueAsString(request)));
             ticketResponse = httpclient.execute(ingestRequest);
             if (ticketResponse != null) {
                 final int statusCode = ticketResponse.getStatusLine().getStatusCode();
