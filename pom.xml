@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.brightcove</groupId>
 	<artifactId>castlabs-java-api</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<developers>
 		<developer>
 			<name>Scott Kidder</name>
