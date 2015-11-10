@@ -23,7 +23,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 
 import com.brightcove.castlabs.client.request.IngestKeysRequest;
-import com.brightcove.castlabs.client.response.IngestKeysResponse;
+import com.brightcove.castlabs.client.response.IngestAssetsResponse;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -158,10 +158,12 @@ public class CastlabsClient {
             ticketResponse = httpclient.execute(ticketRequest);
             if (ticketResponse != null) {
                 final int statusCode = ticketResponse.getStatusLine().getStatusCode();
-                final String reason = ticketResponse.getStatusLine().getReasonPhrase();
                 if (200 != statusCode) {
+                    final String reason = ticketResponse.getStatusLine().getReasonPhrase();
+                    final String responseBody =
+                            IOUtils.toString(ticketResponse.getEntity().getContent());
                     throw new CastlabsException("Ticket retrieval failed: Response code="
-                            + statusCode + ", Reason=" + reason);
+                            + statusCode + ", Reason=" + reason + ", Body=" + responseBody);
                 }
             } else {
                 throw new CastlabsException("No response when retrieving Castlabs ticket");
@@ -186,7 +188,7 @@ public class CastlabsClient {
      * @throws CastlabsException error reported by Castlabs
      * @throws IOException network error while communicating with Castlabs REST API
      */
-    public IngestKeysResponse ingestKeys(IngestKeysRequest request, String merchantId)
+    public IngestAssetsResponse ingestKeys(IngestKeysRequest request, String merchantId)
             throws CastlabsException, IOException {
         final String uri = this.ingestionBaseUrl + "frontend/api/keys/v2/ingest/" + merchantId
                 + "?ticket=" + this.getTicket(merchantId);
@@ -195,7 +197,7 @@ public class CastlabsClient {
         ingestRequest.setHeader("Accept", "application/json");
 
         final CloseableHttpClient httpclient = HttpClients.createDefault();
-        CloseableHttpResponse ticketResponse = null;
+        CloseableHttpResponse ingestResponse = null;
         try {
             if (this.connectionTimeoutSeconds > 0) {
                 int connectionTimeout = connectionTimeoutSeconds * 1000;
@@ -206,18 +208,20 @@ public class CastlabsClient {
                 ingestRequest.setConfig(requestConfig);
             }
             ingestRequest.setEntity(new StringEntity(objectMapper.writeValueAsString(request)));
-            ticketResponse = httpclient.execute(ingestRequest);
-            if (ticketResponse != null) {
-                final int statusCode = ticketResponse.getStatusLine().getStatusCode();
-                final String reason = ticketResponse.getStatusLine().getReasonPhrase();
+            ingestResponse = httpclient.execute(ingestRequest);
+            if (ingestResponse != null) {
+                final int statusCode = ingestResponse.getStatusLine().getStatusCode();
                 if (200 != statusCode) {
-                    throw new CastlabsException(
-                            "Ingest failed: Response code=" + statusCode + ", Reason=" + reason);
+                    final String reason = ingestResponse.getStatusLine().getReasonPhrase();
+                    final String responseBody =
+                            IOUtils.toString(ingestResponse.getEntity().getContent());
+                    throw new CastlabsException("Ingest failed: Response code=" + statusCode
+                            + ", Reason=" + reason + ", Body=" + responseBody);
                 }
-                final HttpEntity responseEntity = ticketResponse.getEntity();
+                final HttpEntity responseEntity = ingestResponse.getEntity();
                 if (responseEntity != null) {
-                    final IngestKeysResponse getPadResponse = objectMapper
-                            .readValue(responseEntity.getContent(), IngestKeysResponse.class);
+                    final IngestAssetsResponse getPadResponse = objectMapper
+                            .readValue(responseEntity.getContent(), IngestAssetsResponse.class);
                     return getPadResponse;
                 } else {
                     throw new CastlabsException("Empty response entity from Castlabs");
@@ -227,8 +231,8 @@ public class CastlabsClient {
             }
         } finally {
             try {
-                if (ticketResponse != null)
-                    ticketResponse.close();
+                if (ingestResponse != null)
+                    ingestResponse.close();
             } catch (IOException e) {
                 // ignore
             }

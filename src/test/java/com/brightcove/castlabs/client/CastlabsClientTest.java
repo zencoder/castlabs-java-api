@@ -5,7 +5,14 @@
  */
 package com.brightcove.castlabs.client;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.HttpResponse.response;
+
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
@@ -20,13 +27,7 @@ import com.brightcove.castlabs.client.request.AssetRequest;
 import com.brightcove.castlabs.client.request.IngestKey;
 import com.brightcove.castlabs.client.request.IngestKeysRequest;
 import com.brightcove.castlabs.client.request.StreamType;
-import com.brightcove.castlabs.client.response.IngestKeysResponse;
-
-import static org.mockserver.model.HttpRequest.*;
-import static org.mockserver.model.HttpResponse.*;
-
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import com.brightcove.castlabs.client.response.IngestAssetsResponse;
 
 /**
  * @author Scott Kidder
@@ -234,7 +235,7 @@ public class CastlabsClientTest {
         key.setKeyRotationId("1");
         asset.getIngestKeys().add(key);
         ingestKeysRequest.getAssets().add(asset);
-        final IngestKeysResponse ingestKeysResponse =
+        final IngestAssetsResponse ingestKeysResponse =
                 castlabsClient.ingestKeys(ingestKeysRequest, merchantId);
         assertNotNull(ingestKeysResponse);
         assertEquals(asset.getAssetId(), asset.getAssetId());
