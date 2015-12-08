@@ -16,6 +16,7 @@ public class IngestKeysResponse {
 
     private String keyId;
     private String keyRotationId;
+    private IngestCENCResponse cencResponse;
     private List<IngestAssetKeyError> errors = new ArrayList<IngestAssetKeyError>();
 
     public String getKeyId() {
@@ -34,6 +35,14 @@ public class IngestKeysResponse {
         this.keyRotationId = keyRotationId;
     }
 
+    public IngestCENCResponse getCencResponse() {
+        return cencResponse;
+    }
+
+    public void setCencResponse(IngestCENCResponse cencResponse) {
+        this.cencResponse = cencResponse;
+    }
+
     public List<IngestAssetKeyError> getErrors() {
         return errors;
     }
@@ -45,6 +54,6 @@ public class IngestKeysResponse {
     @Override
     public String toString() {
         return "IngestKeysResponse [keyId=" + keyId + ", keyRotationId=" + keyRotationId
-                + ", errors=" + errors + "]";
+                + ", cencResponse=" + cencResponse + ", errors=" + errors + "]";
     }
 }

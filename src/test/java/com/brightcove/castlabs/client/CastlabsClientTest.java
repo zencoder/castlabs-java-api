@@ -11,9 +11,11 @@ import static org.junit.Assert.fail;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -212,20 +214,8 @@ public class CastlabsClientTest {
                         .withQueryStringParameter("ticket", ticket)
                         .withHeader("accept", "application/json")
                         .withHeader("content-type", "application/json");
-        mockServerClient.when(ingestAssetKeysRequest).respond(response().withStatusCode(200).withBody("{\n" + 
-                "  \"assets\": [\n" + 
-                "    {\n" + 
-                "      \"assetId\": \"rst_test_20150909_004\",\n" + 
-                "      \"keys\": [\n" + 
-                "        {\n" + 
-                "          \"streamType\": \"VIDEO\",\n" + 
-                "          \"keyRotationId\": \"1\",\n" + 
-                "          \"keyId\": \"a6dHTVECSJe0MEJEOiZHQg==\"\n" + 
-                "        }\n" + 
-                "      ]\n" + 
-                "    }\n" + 
-                "  ]\n" + 
-                "}"));
+        final String response = IOUtils.toString(new FileInputStream("src/test/resources/sample_ingest_response.json"));
+        mockServerClient.when(ingestAssetKeysRequest).respond(response().withStatusCode(200).withBody(response));
         final IngestKeysRequest ingestKeysRequest = new IngestKeysRequest();
         final AssetRequest asset = new AssetRequest();
         asset.setAssetId("rst_test_20150909_004");
@@ -242,7 +232,7 @@ public class CastlabsClientTest {
         assertEquals(key.getKeyId(), asset.getIngestKeys().get(0).getKeyId());
         assertEquals(key.getKeyRotationId(), asset.getIngestKeys().get(0).getKeyRotationId());
         assertEquals(key.getStreamType(), asset.getIngestKeys().get(0).getStreamType());
-
+        
         mockServerClient.verify(loginRequest, VerificationTimes.once());
         mockServerClient.verify(ticketRequest, VerificationTimes.once());
         mockServerClient.verify(ingestAssetKeysRequest, VerificationTimes.once());

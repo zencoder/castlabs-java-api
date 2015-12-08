@@ -1,0 +1,29 @@
+{
+  "assets": [
+    {
+      "assetId": "rst_test_20150909_004",
+      "keys": [
+        {
+          "streamType": "VIDEO",
+          "keyRotationId": "1",
+          "keyId": "a6dHTVECSJe0MEJEOiZHQg==",
+          "cencResponse": {
+            "systemId": {
+              "edef8ba9-79d6-4ace-a3c8-27dcd51d21ed": {
+                "name": "Widevine",
+                "psshBoxContent": "CAESEGunR0[...]"
+              },
+              "9A04F079-9840-4286-AB92-E65BE0885F95": {
+                "name": "PlayReady",
+                "xmlFragment":"<mspr:pro>LgMAAAEAAQA[...]</mspr:pro>",
+                "psshBoxContent": "LgMAAAEAAQAkAzwA[...]"
+              }
+            }
+          },
+          "errors": []
+        }
+      ],
+      "errors": []
+    }
+  ]
+}
