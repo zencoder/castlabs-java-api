@@ -1,13 +1,9 @@
 /**
  * Copyright 2015 Brightcove Inc. All rights reserved.
- * 
- * @author Scott Kidder
  */
 package com.brightcove.castlabs.client;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
@@ -15,26 +11,18 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import com.brightcove.castlabs.client.request.*;
+import com.brightcove.castlabs.client.response.AddSubMerchantAccountResponse;
 import org.apache.commons.io.IOUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.hamcrest.core.StringContains;
+import org.junit.*;
 import org.mockserver.client.server.MockServerClient;
 import org.mockserver.junit.MockServerRule;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import com.brightcove.castlabs.client.request.AssetRequest;
-import com.brightcove.castlabs.client.request.IngestKey;
-import com.brightcove.castlabs.client.request.IngestKeysRequest;
-import com.brightcove.castlabs.client.request.StreamType;
 import com.brightcove.castlabs.client.response.IngestAssetsResponse;
 
-/**
- * @author Scott Kidder
- *
- */
 public class CastlabsClientTest {
 
     private static final int mockPort = 1080;
@@ -49,6 +37,9 @@ public class CastlabsClientTest {
     private String username;
     private String password;
 
+    final String exampleLoginToken = "FVyaO9p22zQRdhPA47lUIhJ3WS0tDYsy47f2y7J2CAmGwR6X";
+    final String exampleTicket = "F40D6052-236F-4942-9C51-DD01C15A14C6";
+
     /**
      * @throws java.lang.Exception
      */
@@ -58,6 +49,17 @@ public class CastlabsClientTest {
         password = "y";
         String mockURL = "http://localhost:" + mockPort;
         castlabsClient = new CastlabsClient(username, password, mockURL, mockURL, 1);
+
+        final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets")
+                .withBody("username=" + username + "&password=" + password)
+                .withHeader("content-type", "application/x-www-form-urlencoded");
+        mockServerClient.when(loginRequest).respond(response().withStatusCode(201).withHeader(
+                "location", "http://localhost:" + mockPort + "/cas/v1/tickets/" + exampleLoginToken));
+
+        final HttpRequest ticketRequest =
+                request().withMethod("POST").withPath("/cas/v1/tickets/" + exampleLoginToken);
+        mockServerClient.when(ticketRequest)
+                .respond(response().withStatusCode(200).withBody(exampleTicket));
     }
 
     /**
@@ -71,7 +73,7 @@ public class CastlabsClientTest {
     @Test
     public void testUnauthorizedLoginRequest() {
         final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets");
-        mockServerClient.when(loginRequest).respond(response().withStatusCode(401));
+        mockServerClient.reset().when(loginRequest).respond(response().withStatusCode(401));
         try {
             castlabsClient.login();
             fail("Expected exception");
@@ -86,7 +88,7 @@ public class CastlabsClientTest {
     @Test
     public void testLoginRequestThatOmitsLocationHeaderInResponse() {
         final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets");
-        mockServerClient.when(loginRequest).respond(response().withStatusCode(201));
+        mockServerClient.reset().when(loginRequest).respond(response().withStatusCode(201));
         try {
             castlabsClient.login();
             fail("Expected exception");
@@ -101,7 +103,7 @@ public class CastlabsClientTest {
     @Test
     public void testLoginRequestTimeout() {
         final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets");
-        mockServerClient.when(loginRequest).respond(response().withDelay(TimeUnit.SECONDS, 30));
+        mockServerClient.reset().when(loginRequest).respond(response().withDelay(TimeUnit.SECONDS, 30));
         try {
             castlabsClient.login();
             fail("Expected exception");
@@ -118,7 +120,7 @@ public class CastlabsClientTest {
                 .withBody("username=" + username + "&password=" + password)
                 .withHeader("content-type", "application/x-www-form-urlencoded");
         String expectedTicket = "http://example.com";
-        mockServerClient.when(loginRequest)
+        mockServerClient.reset().when(loginRequest)
                 .respond(response().withStatusCode(201).withHeader("location", expectedTicket));
         final String loginURL = castlabsClient.login();
         assertEquals(expectedTicket, loginURL);
@@ -131,13 +133,14 @@ public class CastlabsClientTest {
         final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets")
                 .withBody("username=" + username + "&password=" + password)
                 .withHeader("content-type", "application/x-www-form-urlencoded");
-        mockServerClient.when(loginRequest).respond(response().withStatusCode(401).withHeader(
-                "location", "http://localhost:" + mockPort + "/cas/v1/tickets/" + loginToken));
+        String uri = "http://localhost:" + mockPort + "/cas/v1/tickets/" + loginToken;
+        mockServerClient.reset().when(loginRequest).respond(response().withStatusCode(401).withHeader(
+                "location", uri));
 
         final HttpRequest ticketRequest =
                 request().withMethod("POST").withPath("/cas/v1/tickets/" + loginToken);
         try {
-            castlabsClient.getTicket("merchX");
+            castlabsClient.getUrlWithTicket(uri);
             fail("Expected exception");
         } catch (CastlabsException e) {
             // ignore
@@ -154,14 +157,25 @@ public class CastlabsClientTest {
         final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets")
                 .withBody("username=" + username + "&password=" + password)
                 .withHeader("content-type", "application/x-www-form-urlencoded");
-        mockServerClient.when(loginRequest).respond(response().withStatusCode(201).withHeader(
-                "location", "http://localhost:" + mockPort + "/cas/v1/tickets/" + loginToken));
 
-        final HttpRequest ticketRequest =
-                request().withMethod("POST").withPath("/cas/v1/tickets/" + loginToken);
-        mockServerClient.when(ticketRequest).respond(response().withStatusCode(401));
+        mockServerClient
+                .reset()
+                .when(loginRequest)
+                .respond(response().withStatusCode(201).withHeader(
+                        "location",
+                        "http://localhost:" + mockPort + "/cas/v1/tickets/" + loginToken
+                ));
+
+        final HttpRequest ticketRequest = request()
+                .withMethod("POST")
+                .withPath("/cas/v1/tickets/" + loginToken);
+
+        mockServerClient
+                .when(ticketRequest)
+                .respond(response().withStatusCode(401));
+
         try {
-            castlabsClient.getTicket("merchX");
+            castlabsClient.getUrlWithTicket("merchX");
             fail("Expected exception");
         } catch (CastlabsException e) {
             // ignore
@@ -178,16 +192,18 @@ public class CastlabsClientTest {
         final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets")
                 .withBody("username=" + username + "&password=" + password)
                 .withHeader("content-type", "application/x-www-form-urlencoded");
-        mockServerClient.when(loginRequest).respond(response().withStatusCode(201).withHeader(
-                "location", "http://localhost:" + mockPort + "/cas/v1/tickets/" + loginToken));
+        final String ticketRequestUrl = "http://localhost:" + mockPort + "/cas/v1/tickets/" + loginToken;
+        mockServerClient.reset().when(loginRequest).respond(response().withStatusCode(201).withHeader(
+                "location", ticketRequestUrl));
 
         final HttpRequest ticketRequest =
                 request().withMethod("POST").withPath("/cas/v1/tickets/" + loginToken);
         mockServerClient.when(ticketRequest).respond(
                 response().withStatusCode(200).withBody("F40D6052-236F-4942-9C51-DD01C15A14C6"));
-        final String ticket = castlabsClient.getTicket("merchX");
-        assertNotNull(ticket);
-        assertEquals("F40D6052-236F-4942-9C51-DD01C15A14C6", ticket);
+
+        final String urlWithTicket = castlabsClient.getUrlWithTicket(ticketRequestUrl);
+        assertNotNull(urlWithTicket);
+        assertEquals("http://localhost:1080/cas/v1/tickets/FVyaO9p22zQRdhPA47lUIhJ3WS0tDYsy47f2y7J2CAmGwR6X?ticket=F40D6052-236F-4942-9C51-DD01C15A14C6", urlWithTicket);
 
         mockServerClient.verify(loginRequest, VerificationTimes.once());
         mockServerClient.verify(ticketRequest, VerificationTimes.once());
@@ -196,27 +212,14 @@ public class CastlabsClientTest {
     @Test
     public void testIngestKeysGold() throws Exception {
         final String merchantId = "merchX";
-        final String ticket = "F40D6052-236F-4942-9C51-DD01C15A14C6";
-        final String loginToken = "FVyaO9p22zQRdhPA47lUIhJ3WS0tDYsy47f2y7J2CAmGwR6X";
-        final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets")
-                .withBody("username=" + username + "&password=" + password)
-                .withHeader("content-type", "application/x-www-form-urlencoded");
-        mockServerClient.when(loginRequest).respond(response().withStatusCode(201).withHeader(
-                "location", "http://localhost:" + mockPort + "/cas/v1/tickets/" + loginToken));
-
-        final HttpRequest ticketRequest =
-                request().withMethod("POST").withPath("/cas/v1/tickets/" + loginToken);
-        mockServerClient.when(ticketRequest)
-                .respond(response().withStatusCode(200).withBody(ticket));
-
         final HttpRequest ingestAssetKeysRequest =
                 request().withMethod("POST").withPath("/frontend/api/keys/v2/ingest/" + merchantId)
-                        .withQueryStringParameter("ticket", ticket)
+                        .withQueryStringParameter("ticket", exampleTicket)
                         .withHeader("accept", "application/json")
                         .withHeader("content-type", "application/json");
-        final String response = IOUtils.toString(new FileInputStream("src/test/resources/sample_ingest_response.json"));
+        final String response = getTestResourceAsString("sample_ingest_response.json");
         mockServerClient.when(ingestAssetKeysRequest).respond(response().withStatusCode(200).withBody(response));
-        final IngestKeysRequest ingestKeysRequest = new IngestKeysRequest();
+
         final AssetRequest asset = new AssetRequest();
         asset.setAssetId("rst_test_20150909_004");
         final IngestKey key = new IngestKey();
@@ -224,39 +227,26 @@ public class CastlabsClientTest {
         key.setKeyId("a6dHTVECSJe0MEJEOiZHQg==");
         key.setKeyRotationId("1");
         asset.getIngestKeys().add(key);
+        final IngestKeysRequest ingestKeysRequest = new IngestKeysRequest();
         ingestKeysRequest.getAssets().add(asset);
-        final IngestAssetsResponse ingestKeysResponse =
-                castlabsClient.ingestKeys(ingestKeysRequest, merchantId);
+
+        final IngestAssetsResponse ingestKeysResponse = castlabsClient.ingestKeys(ingestKeysRequest, merchantId);
+
         assertNotNull(ingestKeysResponse);
         assertEquals(asset.getAssetId(), asset.getAssetId());
         assertEquals(key.getKeyId(), asset.getIngestKeys().get(0).getKeyId());
         assertEquals(key.getKeyRotationId(), asset.getIngestKeys().get(0).getKeyRotationId());
         assertEquals(key.getStreamType(), asset.getIngestKeys().get(0).getStreamType());
-        
-        mockServerClient.verify(loginRequest, VerificationTimes.once());
-        mockServerClient.verify(ticketRequest, VerificationTimes.once());
         mockServerClient.verify(ingestAssetKeysRequest, VerificationTimes.once());
     }
 
     @Test
     public void testIngestKeysErrorNotFound() {
         final String merchantId = "merchX";
-        final String ticket = "F40D6052-236F-4942-9C51-DD01C15A14C6";
-        final String loginToken = "FVyaO9p22zQRdhPA47lUIhJ3WS0tDYsy47f2y7J2CAmGwR6X";
-        final HttpRequest loginRequest = request().withMethod("POST").withPath("/cas/v1/tickets")
-                .withBody("username=" + username + "&password=" + password)
-                .withHeader("content-type", "application/x-www-form-urlencoded");
-        mockServerClient.when(loginRequest).respond(response().withStatusCode(201).withHeader(
-                "location", "http://localhost:" + mockPort + "/cas/v1/tickets/" + loginToken));
-
-        final HttpRequest ticketRequest =
-                request().withMethod("POST").withPath("/cas/v1/tickets/" + loginToken);
-        mockServerClient.when(ticketRequest)
-                .respond(response().withStatusCode(200).withBody(ticket));
 
         final HttpRequest ingestAssetKeysRequest =
                 request().withMethod("POST").withPath("/frontend/api/keys/v2/ingest/" + merchantId)
-                        .withQueryStringParameter("ticket", ticket)
+                        .withQueryStringParameter("ticket", exampleTicket)
                         .withHeader("accept", "application/json")
                         .withHeader("content-type", "application/json");
         mockServerClient.when(ingestAssetKeysRequest).respond(response().withStatusCode(401));
@@ -270,8 +260,81 @@ public class CastlabsClientTest {
             fail(e.getMessage());
         }
 
-        mockServerClient.verify(loginRequest, VerificationTimes.once());
-        mockServerClient.verify(ticketRequest, VerificationTimes.once());
         mockServerClient.verify(ingestAssetKeysRequest, VerificationTimes.once());
     }
+
+    @Test
+    public void testItCanMakeASubMerchantCreationRequest() throws Exception {
+        final String merchantId = "merchX";
+        final HttpRequest expectedRequest =
+                request().withMethod("POST").withPath("/frontend/rest/reselling/v1/reseller/" + merchantId + "/submerchant/add")
+                        .withQueryStringParameter("ticket", exampleTicket)
+                        .withHeader("accept", "application/json")
+                        .withHeader("content-type", "application/json");
+        final String mockResponse = getTestResourceAsString("sample_sub_merchant_creation_response.json");
+        mockServerClient.when(expectedRequest).respond(response().withStatusCode(200).withBody(mockResponse));
+        AddSubMerchantAccountRequest request = new AddSubMerchantAccountRequest();
+        request.setApiNameSuffix("exampleAPINameSuffix");
+        request.setLinkedUserUuid("10f38484-ff73-4101-b879-8794dd26fe77");
+        request.setName("Example Name");
+
+        final AddSubMerchantAccountResponse response = castlabsClient.addSubMerchantAccount(request, merchantId);
+
+        assertNotNull(response);
+        assertEquals(response.getSubMerchantUuid(), "0491caa4-8392-4b42-badc-f38a00134d88");
+        mockServerClient.verify(expectedRequest, VerificationTimes.once());
+    }
+
+    @Test
+    public void testItCanHandleCastlabsErrorsWhenMakingASubMerchantCreationRequest() throws Exception {
+        final String merchantId = "merchX";
+        final HttpRequest expectedRequest =
+                request().withMethod("POST").withPath("/frontend/rest/reselling/v1/reseller/" + merchantId + "/submerchant/add")
+                        .withQueryStringParameter("ticket", exampleTicket)
+                        .withHeader("accept", "application/json")
+                        .withHeader("content-type", "application/json");
+        final String mockResponse = getTestResourceAsString("sample_sub_merchant_creation_error_response.json");
+        mockServerClient.when(expectedRequest).respond(response().withStatusCode(200).withBody(mockResponse));
+        AddSubMerchantAccountRequest request = new AddSubMerchantAccountRequest();
+        request.setApiNameSuffix("exampleAPINameSuffix");
+        request.setName("Example Name");
+
+        try {
+            castlabsClient.addSubMerchantAccount(request, merchantId);
+            fail("Expected a CastlabsException to be returned");
+        } catch(CastlabsException e) {
+            assertThat(e.getMessage(), StringContains.containsString("linkedUserUuid"));
+            assertThat(e.getMessage(), StringContains.containsString("may not be null"));
+            mockServerClient.verify(expectedRequest, VerificationTimes.once());
+        }
+    }
+
+    @Test
+    public void testItCanHandleHttpErrorsWhenMakingASubMerchantCreationRequest() throws Exception {
+        final String merchantId = "merchX";
+        final HttpRequest expectedRequest =
+                request().withMethod("POST").withPath("/frontend/rest/reselling/v1/reseller/" + merchantId + "/submerchant/add")
+                        .withQueryStringParameter("ticket", exampleTicket)
+                        .withHeader("accept", "application/json")
+                        .withHeader("content-type", "application/json");
+        mockServerClient.when(expectedRequest).respond(response().withStatusCode(400));
+        AddSubMerchantAccountRequest request = new AddSubMerchantAccountRequest();
+        request.setApiNameSuffix("exampleAPINameSuffix");
+        request.setLinkedUserUuid("10f38484-ff73-4101-b879-8794dd26fe77");
+        request.setName("Example Name");
+
+        try {
+            castlabsClient.addSubMerchantAccount(request, merchantId);
+            fail("Expected a CastlabsException to be returned");
+        } catch(CastlabsException e) {
+            assertThat(e.getMessage(), StringContains.containsString("HTTP Status: 400"));
+            mockServerClient.verify(expectedRequest, VerificationTimes.once());
+        }
+    }
+
+    private String getTestResourceAsString(String filename) throws IOException {
+        final String path = this.getClass().getClassLoader().getResource(filename).getFile();
+        return IOUtils.toString(new FileInputStream(path));
+    }
+
 }
