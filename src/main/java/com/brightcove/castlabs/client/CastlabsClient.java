@@ -4,9 +4,9 @@
 package com.brightcove.castlabs.client;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
@@ -78,7 +78,7 @@ public class CastlabsClient {
         loginRequest.addHeader("Content-Type", "application/x-www-form-urlencoded");
         loginRequest.setHeader("Accept", "*/*");
 
-        final List<NameValuePair> entityParts = new ArrayList<NameValuePair>();
+        final List<NameValuePair> entityParts = Lists.newArrayList();
         entityParts.add(new BasicNameValuePair("username", this.username));
         entityParts.add(new BasicNameValuePair("password", this.password));
 
@@ -93,7 +93,7 @@ public class CastlabsClient {
         loginRequest.setEntity(new UrlEncodedFormEntity(entityParts));
 
         final CloseableHttpClient httpclient = HttpClients.createDefault();
-        try (CloseableHttpResponse loginResponse = httpclient.execute(loginRequest)) {
+        try (final CloseableHttpResponse loginResponse = httpclient.execute(loginRequest)) {
             if (loginResponse != null) {
                 final int statusCode = loginResponse.getStatusLine().getStatusCode();
                 final String reason = loginResponse.getStatusLine().getReasonPhrase();
@@ -128,7 +128,7 @@ public class CastlabsClient {
         ticketRequest.addHeader("Content-Type", "application/x-www-form-urlencoded");
         ticketRequest.setHeader("Accept", "*/*");
 
-        final List<NameValuePair> entityParts = new ArrayList<>();
+        final List<NameValuePair> entityParts = Lists.newArrayList();
         entityParts.add(new BasicNameValuePair("service", url));
 
         if (this.connectionTimeoutSeconds > 0) {
@@ -142,7 +142,7 @@ public class CastlabsClient {
         ticketRequest.setEntity(new UrlEncodedFormEntity(entityParts));
 
         final CloseableHttpClient httpclient = HttpClients.createDefault();
-        try (CloseableHttpResponse ticketResponse = httpclient.execute(ticketRequest)) {
+        try (final CloseableHttpResponse ticketResponse = httpclient.execute(ticketRequest)) {
             if (ticketResponse != null) {
                 final int statusCode = ticketResponse.getStatusLine().getStatusCode();
                 if (200 != statusCode) {
@@ -187,7 +187,7 @@ public class CastlabsClient {
         ingestRequest.setEntity(new StringEntity(objectMapper.writeValueAsString(request)));
 
         final CloseableHttpClient httpclient = HttpClients.createDefault();
-        try (CloseableHttpResponse ingestResponse = httpclient.execute(ingestRequest)) {
+        try (final CloseableHttpResponse ingestResponse = httpclient.execute(ingestRequest)) {
             if (ingestResponse != null) {
                 final int statusCode = ingestResponse.getStatusLine().getStatusCode();
                 if (200 != statusCode) {
@@ -237,7 +237,7 @@ public class CastlabsClient {
         addResellerRequest.setEntity(new StringEntity(objectMapper.writeValueAsString(request)));
 
         final CloseableHttpClient httpclient = HttpClients.createDefault();
-        try (CloseableHttpResponse httpResponse = httpclient.execute(addResellerRequest)){
+        try (final CloseableHttpResponse httpResponse = httpclient.execute(addResellerRequest)){
             final HttpEntity responseEntity = httpResponse.getEntity();
             if (responseEntity == null) {
                 throw new CastlabsException("Empty response entity from Castlabs. HTTP Status: " + httpResponse.getStatusLine().getStatusCode());
