@@ -1,7 +1,5 @@
 /**
  * Copyright 2015 Brightcove Inc. All rights reserved.
- * 
- * @author Scott Kidder
  */
 package com.brightcove.castlabs.client;
 
@@ -24,14 +22,13 @@ import org.apache.http.message.BasicNameValuePair;
 
 import com.brightcove.castlabs.client.request.IngestKeysRequest;
 import com.brightcove.castlabs.client.response.IngestAssetsResponse;
+import com.brightcove.castlabs.client.request.AddSubMerchantAccountRequest;
+import com.brightcove.castlabs.client.response.AddSubMerchantAccountResponse;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Client for interacting with the Castlabs key ingestion API.
- * 
- * @author Scott Kidder
- *
+ * Client for interacting with the Castlabs API.
  */
 public class CastlabsClient {
 
@@ -49,7 +46,7 @@ public class CastlabsClient {
     }
 
     public CastlabsClient(String username, String password, String authBaseUrl,
-            String ingestionBaseUrl, int connectionTimeoutSeconds) {
+                          String ingestionBaseUrl, int connectionTimeoutSeconds) {
         this.objectMapper = new ObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.username = username;
@@ -71,10 +68,10 @@ public class CastlabsClient {
 
     /**
      * Login to the Castlabs API endpoint.
-     * 
+     *
      * @return a ticket URL
      * @throws CastlabsException error reported by Castlabs
-     * @throws IOException communication error when interacting with Castlabs API
+     * @throws IOException       communication error when interacting with Castlabs API
      */
     protected String login() throws CastlabsException, IOException {
         final HttpPost loginRequest = new HttpPost(this.authBaseUrl + "cas/v1/tickets");
@@ -127,21 +124,20 @@ public class CastlabsClient {
 
 
     /**
-     * Retrieve an authentication ticket with the given merchant ID.
-     * 
-     * @param merchantId Castlabs-issued merchant ID
+     * Retrieve an authentication ticket with the given URL and return the URL with token appended
+     *
+     * @param url URL to request the token for
      * @return ticket that can be used to ingest encryption keys
      * @throws CastlabsException error reported by Castlabs
-     * @throws IOException communication error when interacting with Castlabs API
+     * @throws IOException       communication error when interacting with Castlabs API
      */
-    protected String getTicket(String merchantId) throws CastlabsException, IOException {
+    protected String getUrlWithTicket(String url) throws CastlabsException, IOException {
         final HttpPost ticketRequest = new HttpPost(this.login());
         ticketRequest.addHeader("Content-Type", "application/x-www-form-urlencoded");
         ticketRequest.setHeader("Accept", "*/*");
 
-        final List<NameValuePair> entityParts = new ArrayList<NameValuePair>();
-        entityParts.add(new BasicNameValuePair("service",
-                this.ingestionBaseUrl + "frontend/api/keys/v2/ingest/" + merchantId));
+        final List<NameValuePair> entityParts = new ArrayList<>();
+        entityParts.add(new BasicNameValuePair("service", url));
 
         final CloseableHttpClient httpclient = HttpClients.createDefault();
         CloseableHttpResponse ticketResponse = null;
@@ -168,7 +164,7 @@ public class CastlabsClient {
             } else {
                 throw new CastlabsException("No response when retrieving Castlabs ticket");
             }
-            return IOUtils.toString(ticketResponse.getEntity().getContent());
+            return url + "?ticket=" + IOUtils.toString(ticketResponse.getEntity().getContent());
         } finally {
             try {
                 if (ticketResponse != null)
@@ -181,17 +177,17 @@ public class CastlabsClient {
 
     /**
      * Ingest one or more keys into the Castlabs keystore.
-     * 
-     * @param request
+     *
+     * @param request Request parameters to pass to Castlabs
      * @param merchantId
      * @return response from Castlabs
      * @throws CastlabsException error reported by Castlabs
-     * @throws IOException network error while communicating with Castlabs REST API
+     * @throws IOException       network error while communicating with Castlabs REST API
      */
     public IngestAssetsResponse ingestKeys(IngestKeysRequest request, String merchantId)
             throws CastlabsException, IOException {
-        final String uri = this.ingestionBaseUrl + "frontend/api/keys/v2/ingest/" + merchantId
-                + "?ticket=" + this.getTicket(merchantId);
+
+        final String uri = this.getUrlWithTicket(this.ingestionBaseUrl + "frontend/api/keys/v2/ingest/" + merchantId);
         final HttpPost ingestRequest = new HttpPost(uri);
         ingestRequest.addHeader("Content-Type", "application/json");
         ingestRequest.setHeader("Accept", "application/json");
@@ -220,9 +216,7 @@ public class CastlabsClient {
                 }
                 final HttpEntity responseEntity = ingestResponse.getEntity();
                 if (responseEntity != null) {
-                    final IngestAssetsResponse getPadResponse = objectMapper
-                            .readValue(responseEntity.getContent(), IngestAssetsResponse.class);
-                    return getPadResponse;
+                    return objectMapper.readValue(responseEntity.getContent(), IngestAssetsResponse.class);
                 } else {
                     throw new CastlabsException("Empty response entity from Castlabs");
                 }
@@ -238,4 +232,62 @@ public class CastlabsClient {
             }
         }
     }
+
+    /**
+     * Add a sub merchant account to Castlabs.
+     *
+     * @param request Request parameters to pass to Castlabs
+     * @param merchantUuid UUID for the merchant that the sub-merchant is being created off
+     * @return response from Castlabs
+     * @throws CastlabsException error reported by Castlabs
+     * @throws IOException       network error while communicating with Castlabs REST API
+     */
+    public AddSubMerchantAccountResponse addSubMerchantAccount(AddSubMerchantAccountRequest request, String merchantUuid)
+            throws IOException, CastlabsException {
+
+        final String uri = this.getUrlWithTicket(this.ingestionBaseUrl + "frontend/rest/reselling/v1/reseller/" + merchantUuid + "/submerchant/add");
+        final HttpPost addResellerRequest = new HttpPost(uri);
+        addResellerRequest.addHeader("Content-Type", "application/json");
+        addResellerRequest.setHeader("Accept", "application/json");
+
+        final CloseableHttpClient httpclient = HttpClients.createDefault();
+        CloseableHttpResponse httpResponse = null;
+        try {
+            if (this.connectionTimeoutSeconds > 0) {
+                int connectionTimeout = connectionTimeoutSeconds * 1000;
+                RequestConfig requestConfig =
+                        RequestConfig.custom().setConnectionRequestTimeout(connectionTimeout)
+                                .setConnectTimeout(connectionTimeout)
+                                .setSocketTimeout(connectionTimeout).build();
+                addResellerRequest.setConfig(requestConfig);
+            }
+            addResellerRequest.setEntity(new StringEntity(objectMapper.writeValueAsString(request)));
+            httpResponse = httpclient.execute(addResellerRequest);
+
+            final HttpEntity responseEntity = httpResponse.getEntity();
+            if (responseEntity == null) {
+                throw new CastlabsException("Empty response entity from Castlabs. HTTP Status: " + httpResponse.getStatusLine().getStatusCode());
+            }
+
+            final String responseBody = IOUtils.toString(responseEntity.getContent());
+            if(responseBody == null || "".equals(responseBody)) {
+                throw new CastlabsException("Empty response entity from Castlabs. HTTP Status: " + httpResponse.getStatusLine().getStatusCode());
+            }
+
+            final AddSubMerchantAccountResponse response = objectMapper.readValue(responseBody, AddSubMerchantAccountResponse.class);
+            if(response.getSubMerchantUuid() == null) {
+                throw new CastlabsException("Unexpected response from Castlabs: " + responseBody);
+            }
+            return response;
+        } finally {
+            try {
+                if (httpResponse != null) {
+                    httpResponse.close();
+                }
+            } catch (IOException e) {
+                // ignore
+            }
+        }
+    }
+
 }
