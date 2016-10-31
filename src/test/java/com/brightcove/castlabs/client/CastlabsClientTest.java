@@ -1,8 +1,3 @@
-/**
- * Copyright 2015 Brightcove Inc. All rights reserved.
- *
- * @author Scott Kidder
- */
 package com.brightcove.castlabs.client;
 
 import static org.junit.Assert.*;
@@ -25,10 +20,6 @@ import org.mockserver.verify.VerificationTimes;
 
 import com.brightcove.castlabs.client.response.IngestAssetsResponse;
 
-/**
- * @author Scott Kidder
- *
- */
 public class CastlabsClientTest {
 
     private static final int mockPort = 1080;

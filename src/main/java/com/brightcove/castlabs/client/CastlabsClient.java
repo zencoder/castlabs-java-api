@@ -1,8 +1,3 @@
-/**
- * Copyright 2015 Brightcove Inc. All rights reserved.
- *
- * @author Scott Kidder
- */
 package com.brightcove.castlabs.client;
 
 import java.io.IOException;
@@ -30,9 +25,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Client for interacting with the Castlabs key ingestion API.
- *
- * @author Scott Kidder
+ * Client for interacting with the Castlabs API.
  */
 public class CastlabsClient {
 
