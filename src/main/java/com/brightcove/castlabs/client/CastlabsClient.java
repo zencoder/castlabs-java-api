@@ -83,8 +83,8 @@ public class CastlabsClient {
         entityParts.add(new BasicNameValuePair("password", this.password));
 
         if (this.connectionTimeoutSeconds > 0) {
-            int connectionTimeout = connectionTimeoutSeconds * 1000;
-            RequestConfig requestConfig =
+            final int connectionTimeout = connectionTimeoutSeconds * 1000;
+            final RequestConfig requestConfig =
                     RequestConfig.custom().setConnectionRequestTimeout(connectionTimeout)
                             .setConnectTimeout(connectionTimeout)
                             .setSocketTimeout(connectionTimeout).build();
@@ -132,8 +132,8 @@ public class CastlabsClient {
         entityParts.add(new BasicNameValuePair("service", url));
 
         if (this.connectionTimeoutSeconds > 0) {
-            int connectionTimeout = connectionTimeoutSeconds * 1000;
-            RequestConfig requestConfig =
+            final int connectionTimeout = connectionTimeoutSeconds * 1000;
+            final RequestConfig requestConfig =
                     RequestConfig.custom().setConnectionRequestTimeout(connectionTimeout)
                             .setConnectTimeout(connectionTimeout)
                             .setSocketTimeout(connectionTimeout).build();
@@ -177,8 +177,8 @@ public class CastlabsClient {
         ingestRequest.setHeader("Accept", "application/json");
 
         if (this.connectionTimeoutSeconds > 0) {
-            int connectionTimeout = connectionTimeoutSeconds * 1000;
-            RequestConfig requestConfig =
+            final int connectionTimeout = connectionTimeoutSeconds * 1000;
+            final RequestConfig requestConfig =
                     RequestConfig.custom().setConnectionRequestTimeout(connectionTimeout)
                             .setConnectTimeout(connectionTimeout)
                             .setSocketTimeout(connectionTimeout).build();
@@ -227,8 +227,8 @@ public class CastlabsClient {
         addResellerRequest.setHeader("Accept", "application/json");
 
         if (this.connectionTimeoutSeconds > 0) {
-            int connectionTimeout = connectionTimeoutSeconds * 1000;
-            RequestConfig requestConfig =
+            final int connectionTimeout = connectionTimeoutSeconds * 1000;
+            final RequestConfig requestConfig =
                     RequestConfig.custom().setConnectionRequestTimeout(connectionTimeout)
                             .setConnectTimeout(connectionTimeout)
                             .setSocketTimeout(connectionTimeout).build();
