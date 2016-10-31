@@ -1,3 +1,6 @@
+/**
+ * Copyright 2015 Brightcove Inc. All rights reserved.
+ */
 package com.brightcove.castlabs.client;
 
 import java.io.IOException;
