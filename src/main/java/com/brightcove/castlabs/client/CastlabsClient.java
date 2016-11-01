@@ -14,6 +14,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -253,7 +254,7 @@ public class CastlabsClient {
         try (final CloseableHttpResponse httpResponse = httpclient.execute(httpRequest)) {
             final int statusCode = httpResponse.getStatusLine().getStatusCode();
 
-            if (statusCode < 200 || statusCode >= 300) {
+            if (statusCode != HttpStatus.SC_NO_CONTENT) {
                 final HttpEntity responseEntity = httpResponse.getEntity();
 
                 String responseBody = "";
