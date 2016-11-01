@@ -236,7 +236,7 @@ public class CastlabsClient {
     }
 
     /**
-     * Add a sub merchant account to Castlabs.
+     * Link an existing user/API account to a sub-merchant account.
      *
      * @param request      Request parameters to pass to Castlabs
      * @param resellerUuid UUID for the merchant that the sub-merchant was created off
