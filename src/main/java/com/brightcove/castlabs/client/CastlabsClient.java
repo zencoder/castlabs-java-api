@@ -4,8 +4,11 @@
 package com.brightcove.castlabs.client;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 
+import com.brightcove.castlabs.client.request.LinkAccountToSubMerchantRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -162,7 +165,7 @@ public class CastlabsClient {
     /**
      * Ingest one or more keys into the Castlabs keystore.
      *
-     * @param request Request parameters to pass to Castlabs
+     * @param request    Request parameters to pass to Castlabs
      * @param merchantId
      * @return response from Castlabs
      * @throws CastlabsException error reported by Castlabs
@@ -172,22 +175,10 @@ public class CastlabsClient {
             throws CastlabsException, IOException {
 
         final String uri = this.getUrlWithTicket(this.ingestionBaseUrl + "frontend/api/keys/v2/ingest/" + merchantId);
-        final HttpPost ingestRequest = new HttpPost(uri);
-        ingestRequest.addHeader("Content-Type", "application/json");
-        ingestRequest.setHeader("Accept", "application/json");
-
-        if (this.connectionTimeoutSeconds > 0) {
-            final int connectionTimeout = connectionTimeoutSeconds * 1000;
-            final RequestConfig requestConfig =
-                    RequestConfig.custom().setConnectionRequestTimeout(connectionTimeout)
-                            .setConnectTimeout(connectionTimeout)
-                            .setSocketTimeout(connectionTimeout).build();
-            ingestRequest.setConfig(requestConfig);
-        }
-        ingestRequest.setEntity(new StringEntity(objectMapper.writeValueAsString(request)));
+        final HttpPost httpRequest = createHttpPostRequest(uri, request);
 
         final CloseableHttpClient httpclient = HttpClients.createDefault();
-        try (final CloseableHttpResponse ingestResponse = httpclient.execute(ingestRequest)) {
+        try (final CloseableHttpResponse ingestResponse = httpclient.execute(httpRequest)) {
             if (ingestResponse != null) {
                 final int statusCode = ingestResponse.getStatusLine().getStatusCode();
                 if (200 != statusCode) {
@@ -212,7 +203,7 @@ public class CastlabsClient {
     /**
      * Add a sub merchant account to Castlabs.
      *
-     * @param request Request parameters to pass to Castlabs
+     * @param request      Request parameters to pass to Castlabs
      * @param merchantUuid UUID for the merchant that the sub-merchant is being created off
      * @return response from Castlabs
      * @throws CastlabsException error reported by Castlabs
@@ -222,9 +213,64 @@ public class CastlabsClient {
             throws IOException, CastlabsException {
 
         final String uri = this.getUrlWithTicket(this.ingestionBaseUrl + "frontend/rest/reselling/v1/reseller/" + merchantUuid + "/submerchant/add");
-        final HttpPost addResellerRequest = new HttpPost(uri);
-        addResellerRequest.addHeader("Content-Type", "application/json");
-        addResellerRequest.setHeader("Accept", "application/json");
+        final HttpPost httpRequest = createHttpPostRequest(uri, request);
+
+        final CloseableHttpClient httpclient = HttpClients.createDefault();
+        try (final CloseableHttpResponse httpResponse = httpclient.execute(httpRequest)) {
+            final HttpEntity responseEntity = httpResponse.getEntity();
+            if (responseEntity == null) {
+                throw new CastlabsException("Empty response entity from Castlabs. HTTP Status: " + httpResponse.getStatusLine().getStatusCode());
+            }
+
+            final String responseBody = IOUtils.toString(responseEntity.getContent());
+            if (StringUtils.isBlank(responseBody)) {
+                throw new CastlabsException("Empty response entity from Castlabs. HTTP Status: " + httpResponse.getStatusLine().getStatusCode());
+            }
+
+            final AddSubMerchantAccountResponse response = objectMapper.readValue(responseBody, AddSubMerchantAccountResponse.class);
+            if (response.getSubMerchantUuid() == null) {
+                throw new CastlabsException("Unexpected response from Castlabs: " + responseBody);
+            }
+            return response;
+        }
+    }
+
+    /**
+     * Add a sub merchant account to Castlabs.
+     *
+     * @param request      Request parameters to pass to Castlabs
+     * @param resellerUuid UUID for the merchant that the sub-merchant was created off
+     * @throws CastlabsException error reported by Castlabs
+     * @throws IOException       network error while communicating with Castlabs REST API
+     */
+    public void linkAccountToSubMerchant(final LinkAccountToSubMerchantRequest request, final String resellerUuid)
+            throws IOException, CastlabsException {
+
+        final String uri = this.getUrlWithTicket(this.ingestionBaseUrl + "frontend/rest/reselling/v1/reseller/" + resellerUuid + "/submerchant/linkAccount");
+        final HttpPost httpRequest = createHttpPostRequest(uri, request);
+
+        final CloseableHttpClient httpclient = HttpClients.createDefault();
+        try (final CloseableHttpResponse httpResponse = httpclient.execute(httpRequest)) {
+            final int statusCode = httpResponse.getStatusLine().getStatusCode();
+
+            if (statusCode < 200 || statusCode >= 300) {
+                final HttpEntity responseEntity = httpResponse.getEntity();
+
+                String responseBody = "";
+                if (responseEntity != null) {
+                    responseBody = IOUtils.toString(responseEntity.getContent());
+                }
+
+                throw new CastlabsException("Unexpected status code from Castlabs: " + statusCode + ". Response body: " + responseBody);
+            }
+        }
+    }
+
+    private HttpPost createHttpPostRequest(String uri, Object body) throws JsonProcessingException, UnsupportedEncodingException {
+        final HttpPost request = new HttpPost(uri);
+        request.addHeader("Content-Type", "application/json");
+        request.setHeader("Accept", "application/json");
+        request.setEntity(new StringEntity(objectMapper.writeValueAsString(body)));
 
         if (this.connectionTimeoutSeconds > 0) {
             final int connectionTimeout = connectionTimeoutSeconds * 1000;
@@ -232,28 +278,10 @@ public class CastlabsClient {
                     RequestConfig.custom().setConnectionRequestTimeout(connectionTimeout)
                             .setConnectTimeout(connectionTimeout)
                             .setSocketTimeout(connectionTimeout).build();
-            addResellerRequest.setConfig(requestConfig);
+            request.setConfig(requestConfig);
         }
-        addResellerRequest.setEntity(new StringEntity(objectMapper.writeValueAsString(request)));
 
-        final CloseableHttpClient httpclient = HttpClients.createDefault();
-        try (final CloseableHttpResponse httpResponse = httpclient.execute(addResellerRequest)){
-            final HttpEntity responseEntity = httpResponse.getEntity();
-            if (responseEntity == null) {
-                throw new CastlabsException("Empty response entity from Castlabs. HTTP Status: " + httpResponse.getStatusLine().getStatusCode());
-            }
-
-            final String responseBody = IOUtils.toString(responseEntity.getContent());
-            if(StringUtils.isBlank(responseBody)) {
-                throw new CastlabsException("Empty response entity from Castlabs. HTTP Status: " + httpResponse.getStatusLine().getStatusCode());
-            }
-
-            final AddSubMerchantAccountResponse response = objectMapper.readValue(responseBody, AddSubMerchantAccountResponse.class);
-            if(response.getSubMerchantUuid() == null) {
-                throw new CastlabsException("Unexpected response from Castlabs: " + responseBody);
-            }
-            return response;
-        }
+        return request;
     }
 
 }

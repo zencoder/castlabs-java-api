@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.brightcove.castlabs.client.request.*;
 import com.brightcove.castlabs.client.response.AddSubMerchantAccountResponse;
+import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.hamcrest.core.StringContains;
 import org.junit.*;
@@ -330,6 +331,50 @@ public class CastlabsClientTest {
             assertThat(e.getMessage(), StringContains.containsString("HTTP Status: 400"));
             mockServerClient.verify(expectedRequest, VerificationTimes.once());
         }
+    }
+
+    @Test
+    public void testItCanLinkAnAccountToASubMerchant() throws Exception {
+        final String merchantId = "merchX";
+        final HttpRequest expectedRequest =
+                request().withMethod("POST").withPath("/frontend/rest/reselling/v1/reseller/" + merchantId + "/submerchant/linkAccount")
+                        .withQueryStringParameter("ticket", exampleTicket)
+                        .withHeader("accept", "application/json")
+                        .withHeader("content-type", "application/json");
+        mockServerClient.when(expectedRequest).respond(response().withStatusCode(204));
+        LinkAccountToSubMerchantRequest request = new LinkAccountToSubMerchantRequest();
+        request.setSubMerchantUuid("0491caa4-8392-4b42-badc-f38a00134d77");
+        request.setAccountUuids(Lists.newArrayList("332cf57f-0941-482c-82cd-d1c8bc32cb77"));
+
+        // Castlabs doesn't return any response body, so we're effectively asserting "No Exception" here
+        castlabsClient.linkAccountToSubMerchant(request, "merchX");
+
+        mockServerClient.verify(expectedRequest, VerificationTimes.once());
+    }
+
+    @Test
+    public void testItCanHandleCastlabsErrorsWhileLinkingAnAccountToASubMerchant() throws Exception {
+        final String merchantId = "merchX";
+        final HttpRequest expectedRequest =
+                request().withMethod("POST").withPath("/frontend/rest/reselling/v1/reseller/" + merchantId + "/submerchant/linkAccount")
+                        .withQueryStringParameter("ticket", exampleTicket)
+                        .withHeader("accept", "application/json")
+                        .withHeader("content-type", "application/json");
+        mockServerClient.when(expectedRequest).respond(response().withStatusCode(418).withBody("I'm a teapot"));
+        LinkAccountToSubMerchantRequest request = new LinkAccountToSubMerchantRequest();
+        request.setSubMerchantUuid("0491caa4-8392-4b42-badc-f38a00134d77");
+        request.setAccountUuids(Lists.newArrayList("332cf57f-0941-482c-82cd-d1c8bc32cb77"));
+
+        try {
+            castlabsClient.linkAccountToSubMerchant(request, "merchX");
+            fail("Expected a CastlabsException to be returned");
+        } catch(CastlabsException e) {
+            assertThat(e.getMessage(), StringContains.containsString("418"));
+            assertThat(e.getMessage(), StringContains.containsString("I'm a teapot"));
+            mockServerClient.verify(expectedRequest, VerificationTimes.once());
+        }
+
+        mockServerClient.verify(expectedRequest, VerificationTimes.once());
     }
 
     private String getTestResourceAsString(String filename) throws IOException {
