@@ -266,7 +266,7 @@ public class CastlabsClient {
         }
     }
 
-    private HttpPost createHttpPostRequest(String uri, Object body) throws JsonProcessingException, UnsupportedEncodingException {
+    private HttpPost createHttpPostRequest(final String uri, final Object body) throws JsonProcessingException, UnsupportedEncodingException {
         final HttpPost request = new HttpPost(uri);
         request.addHeader("Content-Type", "application/json");
         request.setHeader("Accept", "application/json");
