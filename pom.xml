@@ -4,15 +4,9 @@
 	<groupId>com.brightcove</groupId>
 	<artifactId>castlabs-java-api</artifactId>
 	<version>1.0.3</version>
-	<developers>
-		<developer>
-			<name>Scott Kidder</name>
-			<timezone>-7</timezone>
-		</developer>
-	</developers>
 	<name>Castlabs Java API</name>
 	<description>Java client API for the Castlabs service</description>
-	<url>https://github.com/skidder/castlabs-java-api</url>
+	<url>https://github.com/zencoder/castlabs-java-api</url>
 	<licenses>
 		<license>
 			<name>Apache License, Version 2.0</name>
@@ -21,7 +15,7 @@
 		</license>
 	</licenses>
 	<scm>
-		<url>https://github.com/skidder/castlabs-java-api.git</url>
+		<url>https://github.com/zencoder/castlabs-java-api.git</url>
 	</scm>
 	<build>
 		<plugins>
