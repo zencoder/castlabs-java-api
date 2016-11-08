@@ -4,6 +4,12 @@
 	<groupId>com.brightcove</groupId>
 	<artifactId>castlabs-java-api</artifactId>
 	<version>1.0.3</version>
+	<developers>
+		<developer>
+			<name>Phil Cluff</name>
+			<timezone>0</timezone>
+		</developer>
+	</developers>
 	<name>Castlabs Java API</name>
 	<description>Java client API for the Castlabs service</description>
 	<url>https://github.com/zencoder/castlabs-java-api</url>
