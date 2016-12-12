@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 
-import com.brightcove.castlabs.client.request.LinkAccountToSubMerchantRequest;
+import com.brightcove.castlabs.client.request.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
@@ -25,9 +25,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 
-import com.brightcove.castlabs.client.request.IngestKeysRequest;
 import com.brightcove.castlabs.client.response.IngestAssetsResponse;
-import com.brightcove.castlabs.client.request.AddSubMerchantAccountRequest;
 import com.brightcove.castlabs.client.response.AddSubMerchantAccountResponse;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -255,6 +253,99 @@ public class CastlabsClient {
             final int statusCode = httpResponse.getStatusLine().getStatusCode();
 
             if (statusCode != HttpStatus.SC_NO_CONTENT) {
+                final HttpEntity responseEntity = httpResponse.getEntity();
+
+                String responseBody = "";
+                if (responseEntity != null) {
+                    responseBody = IOUtils.toString(responseEntity.getContent());
+                }
+
+                throw new CastlabsException("Unexpected status code from Castlabs: " + statusCode + ". Response body: " + responseBody);
+            }
+        }
+    }
+
+    /**
+     * Update Account Authorization Setting
+     *
+     * @param request      Request parameters to pass to Castlabs
+     * @param merchantUuid UUID for the merchant
+     * @throws CastlabsException error reported by Castlabs
+     * @throws IOException       network error while communicating with Castlabs REST API
+     */
+    public void updateAuthorizationSettings(final UpdateAuthorizationSettingsRequest request, final String merchantUuid)
+            throws IOException, CastlabsException {
+
+        final String uri = this.getUrlWithTicket(this.ingestionBaseUrl + "frontend/rest/config/v1/" + merchantUuid + "/auth/settings");
+        final HttpPost httpRequest = createHttpPostRequest(uri, request);
+
+        final CloseableHttpClient httpclient = HttpClients.createDefault();
+        try (final CloseableHttpResponse httpResponse = httpclient.execute(httpRequest)) {
+            final int statusCode = httpResponse.getStatusLine().getStatusCode();
+
+            if (statusCode != HttpStatus.SC_OK) {
+                final HttpEntity responseEntity = httpResponse.getEntity();
+
+                String responseBody = "";
+                if (responseEntity != null) {
+                    responseBody = IOUtils.toString(responseEntity.getContent());
+                }
+
+                throw new CastlabsException("Unexpected status code from Castlabs: " + statusCode + ". Response body: " + responseBody);
+            }
+        }
+    }
+
+    /**
+     * Add a Shared Secret to the Castlabs Account
+     *
+     * @param request      Request parameters to pass to Castlabs
+     * @param merchantUuid UUID for the merchant
+     * @throws CastlabsException error reported by Castlabs
+     * @throws IOException       network error while communicating with Castlabs REST API
+     */
+    public void addSharedSecret(final SharedSecretRequest request, final String merchantUuid)
+            throws IOException, CastlabsException {
+
+        final String uri = this.getUrlWithTicket(this.ingestionBaseUrl + "frontend/rest/config/v1/" + merchantUuid + "/upfront/secret/add");
+        final HttpPost httpRequest = createHttpPostRequest(uri, request);
+
+        final CloseableHttpClient httpclient = HttpClients.createDefault();
+        try (final CloseableHttpResponse httpResponse = httpclient.execute(httpRequest)) {
+            final int statusCode = httpResponse.getStatusLine().getStatusCode();
+
+            if (statusCode != HttpStatus.SC_OK) {
+                final HttpEntity responseEntity = httpResponse.getEntity();
+
+                String responseBody = "";
+                if (responseEntity != null) {
+                    responseBody = IOUtils.toString(responseEntity.getContent());
+                }
+
+                throw new CastlabsException("Unexpected status code from Castlabs: " + statusCode + ". Response body: " + responseBody);
+            }
+        }
+    }
+
+    /**
+     * Add Fairplay configuration to the Castlabs Account
+     *
+     * @param request      Request parameters to pass to Castlabs
+     * @param merchantUuid UUID for the merchant
+     * @throws CastlabsException error reported by Castlabs
+     * @throws IOException       network error while communicating with Castlabs REST API
+     */
+    public void setFairplayConfiguration(final FairplayRequest request, final String merchantUuid)
+            throws IOException, CastlabsException {
+
+        final String uri = this.getUrlWithTicket(this.ingestionBaseUrl + "frontend/rest/config/v1/" + merchantUuid + "/drm/fairplay");
+        final HttpPost httpRequest = createHttpPostRequest(uri, request);
+
+        final CloseableHttpClient httpclient = HttpClients.createDefault();
+        try (final CloseableHttpResponse httpResponse = httpclient.execute(httpRequest)) {
+            final int statusCode = httpResponse.getStatusLine().getStatusCode();
+
+            if (statusCode != HttpStatus.SC_OK) {
                 final HttpEntity responseEntity = httpResponse.getEntity();
 
                 String responseBody = "";

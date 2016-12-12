@@ -377,6 +377,140 @@ public class CastlabsClientTest {
         mockServerClient.verify(expectedRequest, VerificationTimes.once());
     }
 
+    @Test
+    public void testItCanUpdateAuthorizationSettings() throws Exception {
+        final String merchantId = "merchX";
+        final HttpRequest expectedRequest =
+                request().withMethod("POST").withPath("/frontend/rest/config/v1/" + merchantId + "/auth/settings")
+                        .withQueryStringParameter("ticket", exampleTicket)
+                        .withHeader("accept", "application/json")
+                        .withHeader("content-type", "application/json");
+        mockServerClient.when(expectedRequest).respond(response().withStatusCode(200));
+        UpdateAuthorizationSettingsRequest request = new UpdateAuthorizationSettingsRequest();
+        request.setMode("UPFRONT");
+
+        // Castlabs doesn't return any response body, so we're effectively asserting "No Exception" here
+        castlabsClient.updateAuthorizationSettings(request, "merchX");
+
+        mockServerClient.verify(expectedRequest, VerificationTimes.once());
+    }
+
+    @Test
+    public void testItCanHandleCastlabsErrorsWhileUpdatingAuthorizationSetting() throws Exception {
+        final String merchantId = "merchX";
+        final HttpRequest expectedRequest =
+                request().withMethod("POST").withPath("/frontend/rest/config/v1/" + merchantId + "/auth/settings")
+                        .withQueryStringParameter("ticket", exampleTicket)
+                        .withHeader("accept", "application/json")
+                        .withHeader("content-type", "application/json");
+        mockServerClient.when(expectedRequest).respond(response().withStatusCode(418).withBody("I'm a teapot"));
+        UpdateAuthorizationSettingsRequest request = new UpdateAuthorizationSettingsRequest();
+        request.setMode("UPFRONT");
+
+        try {
+            castlabsClient.updateAuthorizationSettings(request, "merchX");
+            fail("Expected a CastlabsException to be returned");
+        } catch(CastlabsException e) {
+            assertThat(e.getMessage(), StringContains.containsString("418"));
+            assertThat(e.getMessage(), StringContains.containsString("I'm a teapot"));
+            mockServerClient.verify(expectedRequest, VerificationTimes.once());
+        }
+
+        mockServerClient.verify(expectedRequest, VerificationTimes.once());
+    }
+
+    @Test
+    public void testItCanAddSharedSecret() throws Exception {
+        final String merchantId = "merchX";
+        final HttpRequest expectedRequest =
+                request().withMethod("POST").withPath("/frontend/rest/config/v1/" + merchantId + "/upfront/secret/add")
+                        .withQueryStringParameter("ticket", exampleTicket)
+                        .withHeader("accept", "application/json")
+                        .withHeader("content-type", "application/json");
+        mockServerClient.when(expectedRequest).respond(response().withStatusCode(200));
+        SharedSecretRequest request = new SharedSecretRequest();
+        request.setEnabled(true);
+        request.setDescription("Test Shared Secret");
+        request.setSecret("[shared_secret_bytes]");
+
+        // Castlabs doesn't return any response body, so we're effectively asserting "No Exception" here
+        castlabsClient.addSharedSecret(request, "merchX");
+
+        mockServerClient.verify(expectedRequest, VerificationTimes.once());
+    }
+
+    @Test
+    public void testItCanHandleCastlabsErrorsWhileAddingSharedSecret() throws Exception {
+        final String merchantId = "merchX";
+        final HttpRequest expectedRequest =
+                request().withMethod("POST").withPath("/frontend/rest/config/v1/" + merchantId + "/upfront/secret/add")
+                        .withQueryStringParameter("ticket", exampleTicket)
+                        .withHeader("accept", "application/json")
+                        .withHeader("content-type", "application/json");
+        mockServerClient.when(expectedRequest).respond(response().withStatusCode(418).withBody("I'm a teapot"));
+        SharedSecretRequest request = new SharedSecretRequest();
+        request.setEnabled(true);
+        request.setDescription("Test Shared Secret");
+        request.setSecret("[shared_secret_bytes]");
+
+        try {
+            castlabsClient.addSharedSecret(request, "merchX");
+            fail("Expected a CastlabsException to be returned");
+        } catch(CastlabsException e) {
+            assertThat(e.getMessage(), StringContains.containsString("418"));
+            assertThat(e.getMessage(), StringContains.containsString("I'm a teapot"));
+            mockServerClient.verify(expectedRequest, VerificationTimes.once());
+        }
+
+        mockServerClient.verify(expectedRequest, VerificationTimes.once());
+    }
+
+    @Test
+    public void testItCanSetFairplayConfiguration() throws Exception {
+        final String merchantId = "merchX";
+        final HttpRequest expectedRequest =
+                request().withMethod("POST").withPath("/frontend/rest/config/v1/" + merchantId + "/drm/fairplay")
+                        .withQueryStringParameter("ticket", exampleTicket)
+                        .withHeader("accept", "application/json")
+                        .withHeader("content-type", "application/json");
+        mockServerClient.when(expectedRequest).respond(response().withStatusCode(200));
+        FairplayRequest request = new FairplayRequest();
+        request.setProviderCertificate("[PEM_encoded_certificate]");
+        request.setProviderPrivateKey("[PEM_encoded_private_key]");
+        request.setApplicationSecretKey("[HEX_encoded_secret_key]");
+
+        // Castlabs doesn't return any response body, so we're effectively asserting "No Exception" here
+        castlabsClient.setFairplayConfiguration(request, "merchX");
+
+        mockServerClient.verify(expectedRequest, VerificationTimes.once());
+    }
+
+    @Test
+    public void testItCanHandleCastlabsErrorsWhileSettingFairplayConfiguration() throws Exception {
+        final String merchantId = "merchX";
+        final HttpRequest expectedRequest =
+                request().withMethod("POST").withPath("/frontend/rest/config/v1/" + merchantId + "/drm/fairplay")
+                        .withQueryStringParameter("ticket", exampleTicket)
+                        .withHeader("accept", "application/json")
+                        .withHeader("content-type", "application/json");
+        mockServerClient.when(expectedRequest).respond(response().withStatusCode(418).withBody("I'm a teapot"));
+        FairplayRequest request = new FairplayRequest();
+        request.setProviderCertificate("[PEM_encoded_certificate]");
+        request.setProviderPrivateKey("[PEM_encoded_private_key]");
+        request.setApplicationSecretKey("[HEX_encoded_secret_key]");
+
+        try {
+            castlabsClient.setFairplayConfiguration(request, "merchX");
+            fail("Expected a CastlabsException to be returned");
+        } catch(CastlabsException e) {
+            assertThat(e.getMessage(), StringContains.containsString("418"));
+            assertThat(e.getMessage(), StringContains.containsString("I'm a teapot"));
+            mockServerClient.verify(expectedRequest, VerificationTimes.once());
+        }
+
+        mockServerClient.verify(expectedRequest, VerificationTimes.once());
+    }
+
     private String getTestResourceAsString(String filename) throws IOException {
         final String path = this.getClass().getClassLoader().getResource(filename).getFile();
         return IOUtils.toString(new FileInputStream(path));
