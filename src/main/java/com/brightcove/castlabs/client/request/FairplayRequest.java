@@ -26,7 +26,7 @@ public class FairplayRequest {
 
     @Override
     public String toString() {
-        return "UpdateAuthorizationSettingsRequest{" +
+        return "FairplayRequest{" +
                 "providerCertificate='" + providerCertificate + '\'' +
                 ", providerPrivateKey='" + providerPrivateKey + '\'' +
                 ", applicationSecretKey='" + applicationSecretKey + '\'' +

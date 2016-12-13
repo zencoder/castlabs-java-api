@@ -8,6 +8,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import com.brightcove.castlabs.client.request.*;
+import com.brightcove.castlabs.client.response.ListAccountsResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
@@ -19,6 +20,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -355,6 +357,42 @@ public class CastlabsClient {
 
                 throw new CastlabsException("Unexpected status code from Castlabs: " + statusCode + ". Response body: " + responseBody);
             }
+        }
+    }
+
+    /**
+     * List accounts available to a merchant
+     *
+     * @param merchantUuid UUID for the merchant
+     * @return response from Castlabs
+     * @throws CastlabsException error reported by Castlabs
+     * @throws IOException       network error while communicating with Castlabs REST API
+     */
+    public ListAccountsResponse listAccounts(final String merchantUuid)
+            throws IOException, CastlabsException {
+
+        final String uri = this.getUrlWithTicket(this.ingestionBaseUrl + "frontend/rest/config/v1/" + merchantUuid + "/account/list");
+        final HttpGet httpRequest = new HttpGet(uri);
+
+        final CloseableHttpClient httpclient = HttpClients.createDefault();
+        try (final CloseableHttpResponse httpResponse = httpclient.execute(httpRequest)) {
+            final int statusCode = httpResponse.getStatusLine().getStatusCode();
+            final HttpEntity responseEntity = httpResponse.getEntity();
+            if (responseEntity == null) {
+                throw new CastlabsException("Empty response entity from Castlabs. HTTP Status: " + httpResponse.getStatusLine().getStatusCode());
+            }
+
+            final String responseBody = IOUtils.toString(responseEntity.getContent());
+            if (StringUtils.isBlank(responseBody)) {
+                throw new CastlabsException("Empty response entity from Castlabs. HTTP Status: " + httpResponse.getStatusLine().getStatusCode());
+            }
+            
+            if (statusCode != HttpStatus.SC_OK) {
+                throw new CastlabsException("Unexpected status code from Castlabs: " + statusCode + ". Response body: " + responseBody);
+            }
+
+            final ListAccountsResponse response = objectMapper.readValue(responseBody, ListAccountsResponse.class);
+            return response;
         }
     }
 

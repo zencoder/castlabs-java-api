@@ -30,7 +30,7 @@ public class SharedSecretRequest {
 
     @Override
     public String toString() {
-        return "UpdateAuthorizationSettingsRequest{" +
+        return "SharedSecretRequest{" +
                 "enabled='" + enabled + '\'' +
                 ", description='" + description + '\'' +
                 ", secret='" + secret + '\'' +

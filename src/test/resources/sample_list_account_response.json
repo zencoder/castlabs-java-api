@@ -1,0 +1,20 @@
+{
+  "accounts": [
+    {
+      "id": "[uuid]",
+      "enabled": true,
+      "api": false,
+      "login": "[login]",
+      "firstName": "[firstName]",
+      "lastName": "[lastName]",
+      "permissions": ["[permission1]", "[permission2]"]
+    },
+    {
+      "id": "[uuid]",
+      "enabled": false,
+      "api": true,
+      "login": "[merchant::login]",
+      "permissions": ["[permission]"]
+    }
+  ]
+}
