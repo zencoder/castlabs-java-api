@@ -285,7 +285,7 @@ public class CastlabsClient {
         try (final CloseableHttpResponse httpResponse = httpclient.execute(httpRequest)) {
             final int statusCode = httpResponse.getStatusLine().getStatusCode();
 
-            if (statusCode != HttpStatus.SC_OK) {
+            if (statusCode != HttpStatus.SC_NO_CONTENT) {
                 final HttpEntity responseEntity = httpResponse.getEntity();
 
                 String responseBody = "";

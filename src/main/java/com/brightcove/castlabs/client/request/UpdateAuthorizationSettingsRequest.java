@@ -5,13 +5,11 @@ public class UpdateAuthorizationSettingsRequest {
     private String mode;
     private String callbackUrl;
 
-    public String getName() {
+    public String getMode() {
         return mode;
     }
 
-    public void setMode(String mode) {
-        this.mode = mode;
-    }
+    public void setMode(String mode) { this.mode = mode; }
 
     public String getCallbackUrl() { return callbackUrl; }
 
