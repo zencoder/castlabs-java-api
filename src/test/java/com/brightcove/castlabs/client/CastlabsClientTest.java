@@ -386,7 +386,7 @@ public class CastlabsClientTest {
                         .withQueryStringParameter("ticket", exampleTicket)
                         .withHeader("accept", "application/json")
                         .withHeader("content-type", "application/json");
-        mockServerClient.when(expectedRequest).respond(response().withStatusCode(200));
+        mockServerClient.when(expectedRequest).respond(response().withStatusCode(204));
         UpdateAuthorizationSettingsRequest request = new UpdateAuthorizationSettingsRequest();
         request.setMode("UPFRONT");
 
