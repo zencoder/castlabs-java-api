@@ -516,7 +516,7 @@ public class CastlabsClientTest {
     public void testItCanMakeAListAccounts() throws Exception {
         final String merchantId = "merchX";
         final HttpRequest expectedRequest =
-                request().withMethod("GET").withPath("frontend/rest/config/v1/" + merchantId + "/account/list")
+                request().withMethod("GET").withPath("/frontend/rest/config/v1/" + merchantId + "/account/list")
                         .withQueryStringParameter("ticket", exampleTicket);
         final String mockResponse = getTestResourceAsString("sample_list_account_response.json");
         mockServerClient.when(expectedRequest).respond(response().withStatusCode(200).withBody(mockResponse));
@@ -532,7 +532,7 @@ public class CastlabsClientTest {
     public void testItCanHandleCastlabsErrorsWhenMakingAListAccountsRequest() throws Exception {
         final String merchantId = "merchX";
         final HttpRequest expectedRequest =
-                request().withMethod("GET").withPath("frontend/rest/config/v1/" + merchantId + "/account/list")
+                request().withMethod("GET").withPath("/frontend/rest/config/v1/" + merchantId + "/account/list")
                         .withQueryStringParameter("ticket", exampleTicket);
         mockServerClient.when(expectedRequest).respond(response().withStatusCode(403));
 
@@ -540,7 +540,7 @@ public class CastlabsClientTest {
             castlabsClient.listAccounts(merchantId);
             fail("Expected a CastlabsException to be returned");
         } catch(CastlabsException e) {
-            assertThat(e.getMessage(), StringContains.containsString("Unexpected status code from Castlabs: 403"));
+            assertEquals(e.getMessage(), "Empty response entity from Castlabs. HTTP Status: 403");
             mockServerClient.verify(expectedRequest, VerificationTimes.once());
         }
     }
