@@ -5,9 +5,11 @@ package com.brightcove.castlabs.client;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.brightcove.castlabs.client.request.*;
+import com.brightcove.castlabs.client.response.DownloadKeysResponse;
 import com.brightcove.castlabs.client.response.ListAccountsResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Lists;
@@ -393,6 +395,48 @@ public class CastlabsClient {
 
             final ListAccountsResponse response = objectMapper.readValue(responseBody, ListAccountsResponse.class);
             return response;
+        }
+    }
+
+    /**
+     * Fetch all of a merchant's keys
+     *
+     * @param merchantUuid UUID for the merchant
+     * @return list of responses from Castlabs
+     * @throws CastlabsException error reported by Castlabs
+     * @throws IOException       network error while communicating with Castlabs REST API
+     */
+    public List<DownloadKeysResponse> downloadKeys(final String merchantUuid)
+            throws IOException, CastlabsException {
+
+        final String uri = this.getUrlWithTicket(this.ingestionBaseUrl + "frontend/download-api/ingestion/query/v1/keys/" + merchantUuid + "/download");
+        final HttpGet httpRequest = new HttpGet(uri);
+
+        final CloseableHttpClient httpclient = HttpClients.createDefault();
+        try (final CloseableHttpResponse httpResponse = httpclient.execute(httpRequest)) {
+            final int statusCode = httpResponse.getStatusLine().getStatusCode();
+            final HttpEntity responseEntity = httpResponse.getEntity();
+            if (responseEntity == null) {
+                throw new CastlabsException("Empty response entity from Castlabs. HTTP Status: " + httpResponse.getStatusLine().getStatusCode());
+            }
+
+            final String responseBody = IOUtils.toString(responseEntity.getContent());
+            if (StringUtils.isBlank(responseBody)) {
+                throw new CastlabsException("Empty response entity from Castlabs. HTTP Status: " + httpResponse.getStatusLine().getStatusCode());
+            }
+
+            if (statusCode != HttpStatus.SC_OK) {
+                throw new CastlabsException("Unexpected status code from Castlabs: " + statusCode + ". Response body: " + responseBody);
+            }
+
+            // The response body is a newline-separated list of JSON objects, so we have to parse them individually
+            final List<DownloadKeysResponse> responses = new ArrayList<>();
+            final String[] keys = responseBody.split("\n");
+            for(String key : keys) {
+                responses.add(objectMapper.readValue(key, DownloadKeysResponse.class));
+            }
+
+            return responses;
         }
     }
 

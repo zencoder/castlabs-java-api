@@ -9,10 +9,12 @@ import static org.mockserver.model.HttpResponse.response;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.brightcove.castlabs.client.request.*;
 import com.brightcove.castlabs.client.response.AddSubMerchantAccountResponse;
+import com.brightcove.castlabs.client.response.DownloadKeysResponse;
 import com.brightcove.castlabs.client.response.ListAccountsResponse;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
@@ -538,6 +540,41 @@ public class CastlabsClientTest {
 
         try {
             castlabsClient.listAccounts(merchantId);
+            fail("Expected a CastlabsException to be returned");
+        } catch(CastlabsException e) {
+            assertEquals(e.getMessage(), "Empty response entity from Castlabs. HTTP Status: 403");
+            mockServerClient.verify(expectedRequest, VerificationTimes.once());
+        }
+    }
+
+    @Test
+    public void testItCanDownloadKeys() throws Exception {
+        final String merchantId = "merchX";
+        final HttpRequest expectedRequest =
+                request().withMethod("GET").withPath("/frontend/download-api/ingestion/query/v1/keys/" + merchantId + "/download")
+                        .withQueryStringParameter("ticket", exampleTicket);
+        final String mockResponse = getTestResourceAsString("sample_download_keys_response");
+        mockServerClient.when(expectedRequest).respond(response().withStatusCode(200).withBody(mockResponse));
+
+        final List<DownloadKeysResponse> response = castlabsClient.downloadKeys(merchantId);
+
+        assertNotNull(response);
+        assertEquals(2, response.size());
+        assertEquals("10204c7b2c154b47a5af2ee41ecebf01", response.get(0).keyId);
+        assertEquals("9fa85148ebc441c7a2f361c7927be915", response.get(1).keyId);
+        mockServerClient.verify(expectedRequest, VerificationTimes.once());
+    }
+
+    @Test
+    public void testItCanHandleCastlabsErrorsWhenDownloadingKeys() throws Exception {
+        final String merchantId = "merchX";
+        final HttpRequest expectedRequest =
+                request().withMethod("GET").withPath("/frontend/download-api/ingestion/query/v1/keys/" + merchantId + "/download")
+                        .withQueryStringParameter("ticket", exampleTicket);
+        mockServerClient.when(expectedRequest).respond(response().withStatusCode(403));
+
+        try {
+            castlabsClient.downloadKeys(merchantId);
             fail("Expected a CastlabsException to be returned");
         } catch(CastlabsException e) {
             assertEquals(e.getMessage(), "Empty response entity from Castlabs. HTTP Status: 403");
