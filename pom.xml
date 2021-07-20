@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.brightcove</groupId>
 	<artifactId>castlabs-java-api</artifactId>
-	<version>1.0.5</version>
+	<version>1.0.6-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<developers>
@@ -26,7 +26,7 @@
 		<url>https://github.com/zencoder/castlabs-java-api.git</url>
 		<connection>scm:git:git@github.com:zencoder/castlabs-java-api.git</connection>
     		<developerConnection>scm:git:git@github.com:zencoder/castlabs-java-api.git</developerConnection>
-		<tag>castlabs-java-api-1.0.5</tag>
+		<tag>HEAD</tag>
 	</scm>
 	<build>
 		<plugins>
