@@ -25,6 +25,8 @@
 	</licenses>
 	<scm>
 		<url>https://github.com/zencoder/castlabs-java-api.git</url>
+		<connection>scm:git:git@github.com:zencoder/castlabs-java-api.git</connection>
+    	<developerConnection>scm:git:git@github.com:zencoder/castlabs-java-api.git</developerConnection>
 		<tag>HEAD</tag>
 	</scm>
 	<build>
