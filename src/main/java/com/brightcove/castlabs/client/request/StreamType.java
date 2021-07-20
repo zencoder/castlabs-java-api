@@ -10,5 +10,5 @@ package com.brightcove.castlabs.client.request;
  *
  */
 public enum StreamType {
-    VIDEO, AUDIO, VIDEO_AUDIO
+    VIDEO, AUDIO, VIDEO_AUDIO, UHD, HD, SD
 }

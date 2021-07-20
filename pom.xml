@@ -1,9 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.brightcove</groupId>
 	<artifactId>castlabs-java-api</artifactId>
-	<version>1.0.4</version>
+	<version>1.0.5-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
 	<developers>
 		<developer>
 			<name>Phil Cluff</name>
@@ -22,6 +25,7 @@
 	</licenses>
 	<scm>
 		<url>https://github.com/zencoder/castlabs-java-api.git</url>
+		<tag>HEAD</tag>
 	</scm>
 	<build>
 		<plugins>
@@ -95,6 +99,17 @@
 				<configuration>
 					<useSystemClassLoader>false</useSystemClassLoader>
 				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-release-plugin</artifactId>
+				<version>2.3.2</version>
+				<dependencies>
+				<dependency>
+					<groupId>org.apache.maven.scm</groupId>
+					<artifactId>maven-scm-provider-gitexe</artifactId>
+					<version>1.8.1</version>
+				</dependency>
+				</dependencies>
 			</plugin>
 		</plugins>
 	</build>
